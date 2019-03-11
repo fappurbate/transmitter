@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "npx gulp dev",
     "build": "npx gulp build",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test": "npx mocha",
+    "test:watch": "npx mocha --watch"
   },
   "repository": {
     "type": "git",
@@ -23,9 +25,13 @@
   },
   "homepage": "https://github.com/fappurbate/transmitter#readme",
   "devDependencies": {
+    "@kothique/request-target": "^2.5.0",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
     "gulp": "^4.0.0",
     "gulp-sourcemaps": "^2.6.5",
     "gulp-uglify-es": "^1.0.4",
+    "mocha": "^6.0.2",
     "rollup-plugin-commonjs": "^8.4.0",
     "rollup-plugin-node-resolve": "^4.0.1",
     "rollup-stream": "^1.24.1",
@@ -33,6 +39,10 @@
     "vinyl-source-stream": "^2.0.0"
   },
   "engines": {
-    "node": ">=8.15"
+    "node": ">=10.x.x"
+  },
+  "dependencies": {
+    "@fappurbate/channel-ext": "^0.2.2",
+    "events": "^3.0.0"
   }
 }

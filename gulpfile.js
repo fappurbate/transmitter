@@ -13,7 +13,9 @@ const js = ({ dev = true } = {}) => function () {
     sourcemap: dev,
     format: 'cjs',
     plugins: [
-      resolve(),
+      resolve({
+        preferBuiltins: false
+      }),
       commonjs()
     ]
   })
