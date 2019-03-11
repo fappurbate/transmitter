@@ -63,7 +63,7 @@ Send a request to pages and/or the bot. If an error response is received, return
 
 #### Class: Failure
 
-Re-exported from `Channel.Failure`. A subclass of `fb.Error` that represents an error response from [`sendRequest(receiver, subject, data)`](#send-requestreceiversubject-data-promise).
+Re-exported from `Channel.Failure`. A subclass of `fb.Error` that represents an error response from [`sendRequest(receiver, subject, data)`](#send-requestreceiver-subject-data-promise).
 
 ##### `new Failure(data)`
 
