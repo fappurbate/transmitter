@@ -78,6 +78,8 @@ const unforward = transmitter.forwardEvent('tip', '@bot', 'statistics', {
 });
 ```
 
+Transform functions can also return a `Promise`.
+
 ##### `forwardEvents(subjects, sender|senders, receiever|receivers, [transform]): Function`
 
 - `subjects` `string[]` Events to forward.
@@ -102,6 +104,78 @@ const unforward = transmitter.forwardEvents(
   }
 );
 ```
+
+Transform functions can also return a `Promise`.
+
+##### `forwardRequest(subject, sender|senders, receiver, [transform]): Function`
+
+- `subject` `string` Request to forward.
+- `sender|senders` `string|string[]` Can only be pages.
+- `receiver` `string` Can only be `@bot`.
+- `transform` `object?` Transform object. Used to transform request and response payload or to change subject.
+- Returns: `Function` Call it to cancel forwarding.
+
+###### Example:
+```js
+const transmitter = new Transmitter;
+const unforward = transmitter.forwardRequest('my-request', ['page1', 'page2'], '@bot', {
+  redirect: 'my-request-in-@bot', // Change subject: my-request -> my-request-in-@bot
+  async transformRequest(data) { // Transform payload before it is sent to @bot
+    // do something awfully asynchronous, for example
+    return data;
+  }
+});
+```
+
+Transform functions can also return a `Promise`.
+
+##### `forwardRequests(subjects, sender|senders, receiver, [transform]): Function`
+
+- `subjects` `string[]` Request to forward.
+- `sender|senders` `string|string[]` Can only be pages.
+- `receiver` `string` Can only be `@bot`.
+- `transform` `object?` Transform object. Used to transform request and response payload or to change subject.
+- Returns: `Function` Call it to cancel forwarding.
+
+###### Example:
+```js
+const transmitter = new Transmitter;
+const unforward = transmitter.forwardRequests(
+  ['my-request1', 'my-request2'], 'page8', '@bot',
+  {
+    'my-request1': {
+      redirect: subject => subject + subject, // Redirect: my-request1 -> 'my-request1my-request1'
+      transformRequest(data) { // Transform payload before it is sent to @bot
+        // do anything you like
+        return data;
+      },
+      async transformResponse(data) { // Transform response payload before getting it to sender
+        /* If error response */
+        if (data instanceof Transmitter.Failure) {
+          console.log(`Let's log our error and pass it on untouched: `, data);
+          throw data;
+        }
+
+        /* else if successul response */
+        const stuff = await getSomeStuff();
+        if (stuff.isBad()) {
+          data.stuff = null;
+          data.badStuff = true;
+          throw new Transmitter.Failure(data); // Response with an error even though a successful response was received
+        }
+
+        data.stuff = stuff;
+        return data;
+      }
+    },
+    $default: {
+      redirect: 'somewhere' // Redirect: my-request2 -> somewhere
+    }
+  }
+);
+```
+
+Transform functions can also return a `Promise`.
 
 #### Class: Failure
 

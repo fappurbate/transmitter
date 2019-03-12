@@ -2,7 +2,9 @@ const EventEmitter = require('events');
 const RequestTarget = require('@kothique/request-target');
 
 const events = new EventEmitter;
-const requests = new RequestTarget;
+const requests = new RequestTarget({
+  callAllHandlers: true
+});
 const testBedEvents = new EventEmitter;
 
 function emitEvent(sender, subject, data) {

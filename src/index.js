@@ -1,3 +1,5 @@
+'use strict';
+
 const Channel = require('@fappurbate/channel-ext');
 const EventEmitter = require('events');
 
@@ -146,6 +148,79 @@ class Transmitter {
     }
   }
 
+  /**
+   * @param {string[]} subjects Requests to forward.
+   * @param {string|string[]} senders Can be a page name.
+   * @param {'@bot'} receiver Can only be `@bot`.
+   * @param {object?} transform Allows easily modifying the request payload or redirection per subject.
+   * @return {() => void} Call this to unforward.
+   */
+  forwardRequests(subjects, senders, receiver, transform = null) {
+    senders = Array.isArray(senders) ? senders : [senders];
+
+    if (receiver !== '@bot') {
+      throw new fb.Error('Invalid recevier: must be \'@bot\'.', 'ERR_INVALID_RECEIVER', { value: receiver });
+    }
+
+    if (subjects.length * senders.length === 0) { // any is 0
+      return () => {};
+    }
+
+    const handlers = {};
+
+    subjects.forEach(subject =>
+      this.onRequest.addHandler(subject, handlers[subject] = async (sender, data) => {
+        if (senders.includes(sender)) {
+          const options = transform && (transform[subject] || transform.$default) || {};
+
+          const newSubject = typeof options.redirect === 'function'
+            ? options.redirect(subject)
+            : (options.redirect || subject);
+          const newData = options.transformRequest ? await options.transformRequest(data) : data;
+
+          try {
+            const result = await this._botChannel.request(newSubject, newData);
+            return (options && options.transformResponse) ? await options.transformResponse(result) : result;
+          } catch (error) {
+            if (error instanceof Transmitter.Failure) {
+              if (options && options.transformResponse) {
+                return await options.transformResponse(error);
+              } else {
+                throw error;
+              }
+            } else {
+              throw error;
+            }
+          }
+        }
+      })
+    );
+
+    return () => Object.keys(handlers).forEach(subject =>
+      this.onRequest.removeHandler(subject, handlers[subject])
+    );
+  }
+
+  /**
+   * @param {string} subject Request to forward.
+   * @param {string|string[]} senders Can be a page name.
+   * @param {'@bot'} receiver Can only be `@bot`.
+   * @param {object?} transform Allows easily modifying the request payload or redirection per subject.
+   * @return {() => void} Call this to unforward.
+   */
+  forwardRequest(subject, senders, receiver, transform = null) {
+    return this.forwardRequests(
+      [subject],
+      senders,
+      receiver,
+      ...transform ? [
+        {
+          [subject]: transform
+        }
+      ] : []
+    );
+  }
+
   _onEventAddListener(subject, callback) {
     this._botChannel.onEvent.addListener(subject, this._botListeners[callback] = data => {
       callback('@bot', data);
@@ -158,13 +233,14 @@ class Transmitter {
 
   _onEventRemoveListener(subject, callback) {
     this._botChannel.onEvent.removeListener(subject, this._botListeners[callback]);
+    delete this._botListeners[callback];
+
     // not implemented yet in upstream but used in tests
     // TODO: remove condition when it's implemented
     if (fb.runtime.onEvent.removeListener) {
       fb.runtime.onEvent.removeListener(subject, callback);
     }
     this._fbListeners[subject].splice(this._fbListeners[subject].indexOf(callback));
-    delete this._botListeners[callback];
   }
 
   _onRequestAddHandler(subject, handler) {
@@ -179,13 +255,14 @@ class Transmitter {
 
   _onRequestRemoveHandler(subject, handler) {
     this._botChannel.onRequest.removeHandler(subject, this._botHandlers[handler]);
+    delete this._botHandlers[handler];
+
     // not implemented yet in upstream but used in tests
     // TODO: remove condition when it's implemented
-    if (fb.runtime.onEvent.removeHandler) {
-      fb.runtime.onEvent.removeHandler(subject, handler);
+    if (fb.runtime.onRequest.removeHandler) {
+      fb.runtime.onRequest.removeHandler(subject, handler);
     }
     this._fbHandlers[subject].splice(this._fbHandlers[subject].indexOf(handler));
-    delete this._botHandlers[handler];
   }
 }
 module.exports = Transmitter;
