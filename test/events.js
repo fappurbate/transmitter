@@ -13,12 +13,15 @@ describe('events', function () {
   });
 
   it('emit events to @bot', function (done) {
-    fb.cb.$events.once('event', (subject, data)=> {
-      expect(subject).to.equal('test-event');
-      expect(data).to.eql({ number: 42 });
+    const fakeEmit = sinon.fake();
+    sinon.replace(this.bot, 'emit', fakeEmit);
+
+    this.transmitter.emitEvent(['@bot', 'my-page'], 'test-event', { number: 42 });
+
+    setTimeout(() => {
+      expect(fakeEmit).to.have.been.calledWith('test-event', { number: 42 });
       done();
     });
-    this.transmitter.emitEvent(['@bot', 'my-page'], 'test-event', { number: 42 });
   });
 
   it('emit events to pages', function (done) {
@@ -37,11 +40,7 @@ describe('events', function () {
       expect(data).to.eql({ number: 42 });
       done();
     });
-    fb.cb.$sendMessage(
-      'notice',
-      new Date,
-      { content: `/fb/channel/["test", "event", "test-event", { "number": 42 }]` }
-    );
+    this.bot._eventHandlers.emit('test-event', { number: 42 });
   });
 
   it('receives events from pages', function (done) {

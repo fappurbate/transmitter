@@ -5,7 +5,7 @@ const RANDOM_STRING = '2/sd&&Fgw3e4.sdc@3w';
 
 class Transmitter {
   constructor(options = {}) {
-    this._bot = options.botChannel || new Channel({
+    this._botChannel = options.botChannel || new Channel({
       name: `${RANDOM_STRING}_${fb.runtime.name}`
     });
 
@@ -48,7 +48,7 @@ class Transmitter {
         fb.runtime.onRequest.removeHandler(subject, handler)
       )
     );
-    return this._bot.close();
+    return this._botChannel.close();
   }
 
   /**
@@ -59,7 +59,7 @@ class Transmitter {
   emitEvent(receivers, subject, data) {
     if (receivers.includes('@bot')) {
       receivers = receivers.filter(x => x !== '@bot');
-      this._bot.emit(subject, data);
+      this._botChannel.emit(subject, data);
     }
 
     if (receivers.length > 0) {
@@ -76,14 +76,14 @@ class Transmitter {
    */
   async sendRequest(receiver, subject, data = {}) {
     if (receiver === '@bot') {
-      return this._bot.request(subject, data);
+      return this._botChannel.request(subject, data);
     } else {
       throw new fb.Error('Invalid receiver.', 'ERR_INVALID_RECEIVER', { receiver });
     }
   }
 
   _onEventAddListener(subject, callback) {
-    this._bot.onEvent.addListener(subject, this._botListeners[callback] = data => {
+    this._botChannel.onEvent.addListener(subject, this._botListeners[callback] = data => {
       callback('@bot', data);
     });
 
@@ -93,7 +93,7 @@ class Transmitter {
   }
 
   _onEventRemoveListener(subject, callback) {
-    this._bot.onEvent.removeListener(subject, this._botListeners[callback]);
+    this._botChannel.onEvent.removeListener(subject, this._botListeners[callback]);
     // not implemented yet in upstream but used in tests
     // TODO: remove condition when it's implemented
     if (fb.runtime.onEvent.removeListener) {
@@ -104,7 +104,7 @@ class Transmitter {
   }
 
   _onRequestAddHandler(subject, handler) {
-    this._bot.onRequest.addHandler(subject, this._botHandlers[handler] = data => {
+    this._botChannel.onRequest.addHandler(subject, this._botHandlers[handler] = data => {
       return handler('@bot', data);
     });
 
@@ -114,7 +114,7 @@ class Transmitter {
   }
 
   _onRequestRemoveHandler(subject, handler) {
-    this._bot.onRequest.removeHandler(subject, this._botHandlers[handler]);
+    this._botChannel.onRequest.removeHandler(subject, this._botHandlers[handler]);
     // not implemented yet in upstream but used in tests
     // TODO: remove condition when it's implemented
     if (fb.runtime.onEvent.removeHandler) {

@@ -1,42 +1,16 @@
 const EventEmitter = require('events');
 
 const extensionEvents = new EventEmitter;
-const testBedEvents = new EventEmitter;
-
-module.exports.events = testBedEvents;
-
-function sendMessage(type, timestamp, data) {
-  extensionEvents.emit('message', type, timestamp, data);
-}
-module.exports.sendMessage = sendMessage;
-
-class FappurbateError extends Error {
-  constructor(message, type, data) {
-    super(message);
-    Error.captureStackTrace(this, FappurbateError);
-
-    this.name = 'FappurbateError';
-    this.type = type;
-    this.data = data;
-  }
-}
 
 module.exports = {
-  Error: FappurbateError,
   cb: {
-    $events: testBedEvents,
-    $sendMessage: sendMessage,
     sendMessage: message => {
       if (message.startsWith('/fb/channel/')) {
         const rest = JSON.parse(message.substr('/fb/channel/'.length));
         const [channelName, type] = rest;
 
-        if (type === 'event') {
-          const [,, subject, data] = rest;
-          testBedEvents.emit('event', subject, data);
-        } else if (type === 'request') {
+        if (type === 'request') {
           const [,, requestId, subject, data] = rest;
-          testBedEvents.emit('request', requestId, subject, data);
 
           if (subject === 'test-success') {
             extensionEvents.emit('message', 'notice', new Date, {
@@ -51,12 +25,6 @@ module.exports = {
               )}`
             });
           }
-        } else if (type === 'success') {
-          const [,, requestId, data] = rest;
-          testBedEvents.emit('success', requestId, data);
-        } else if (type === 'failure') {
-          const [,, requestId, data] = rest;
-          testBedEvents.emit('failure', requestId, data);
         }
       }
     },
@@ -64,7 +32,6 @@ module.exports = {
       addHandler: handler => {
         extensionEvents.on('message', async (type, timestamp, data) => {
           const result = await handler(type, timestamp, data);
-          testBedEvents.emit('handler', result);
         });
       }
     }

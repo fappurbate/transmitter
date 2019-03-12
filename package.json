@@ -35,6 +35,8 @@
     "rollup-plugin-commonjs": "^8.4.0",
     "rollup-plugin-node-resolve": "^4.0.1",
     "rollup-stream": "^1.24.1",
+    "sinon": "^7.2.7",
+    "sinon-chai": "^3.3.0",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0"
   },
