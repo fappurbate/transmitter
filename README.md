@@ -61,6 +61,48 @@ Send an event to pages and/or the bot.
 
 Send a request to pages and/or the bot. If an error response is received, returns a promise that rejects with a `Transmitter.Failure` that contains attached data. It is to distinguish an error response from other errors like network errors, timeout, etc.
 
+##### `forwardEvent(subject, sender|senders, receiever|receivers, [transform]): Function`
+
+- `subject` `string` Event to forward.
+- `sender|senders` `string|string[]` Can be pages or `@bot`.
+- `receiver|receivers` `string|string[]` Can be pages or `@bot`.
+- `transform` `object?` Transform object. Used to transform event data or to change its subject.
+- Returns: `Function` Call it to cancel forwarding.
+
+###### Example:
+```js
+const transmitter = new Transmitter;
+const unforward = transmitter.forwardEvent('tip', '@bot', 'statistics', {
+  redirect: 'tip-received',                                            // Change subject: tip -> tip-received
+  transform: ({ tipper, amount }) => ({ tipper, amount: amount / 20 }) // Transform event data: tokens -> US dollars
+});
+```
+
+##### `forwardEvents(subjects, sender|senders, receiever|receivers, [transform]): Function`
+
+- `subjects` `string[]` Events to forward.
+- `sender|senders` `string|string[]` Can be pages or `@bot`.
+- `receiver|receivers` `string|string[]` Can be pages or `@bot`.
+- `transform` `object?` Transform object. Used to transform event data or to change its subject.
+- Returns: `Function` Call it to cancel forwarding.
+
+###### Example:
+```js
+const transmitter = new Transmitter;
+const unforward = transmitter.forwardEvents(
+  ['tip', 'private-show-start', 'private-show-end'], '@bot', 'statistics',
+  {
+    tip: {
+      redirect: 'tip-received', // Change subject: tip -> tip-received
+      transform: ({ tipper, amount }) => ({ tipper, amount: amount / 20 }) // Transform event data: tokens -> US dollars
+    },
+    $default: {
+      redirect: subject => subject + 'ed' // Change subject: private-show-{start,end} -> private-show-{started,ended}
+    }
+  }
+);
+```
+
 #### Class: Failure
 
 Re-exported from `Channel.Failure`. A subclass of `fb.Error` that represents an error response from [`sendRequest(receiver, subject, data)`](#send-requestreceiver-subject-data-promise).

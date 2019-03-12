@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+
+- Event forwarding: `forwardEvent`, `forwardEvents`
+
 ## 0.1.0
 
-- `onEmit`, `onRequest`, `emitEvent`, `sendRequest`
+- Basic functionality: `onEmit`, `onRequest`, `emitEvent`, `sendRequest`

@@ -68,6 +68,70 @@ class Transmitter {
   }
 
   /**
+   * @param {string[]} subjects Subjects of the events to be forwarded.
+   * @param {string|string[]} senders Can be `@bot` or a page name.
+   * @param {string|string[]} receivers Can be `@bot` or a page name.
+   * @param {object?} transform Allows easily modifying the event payload or redirection per subject.
+   * @return {() => void} Call this to unforward.
+   */
+  forwardEvents(subjects, senders, receivers, transform = null) {
+    senders = Array.isArray(senders) ? senders : [senders];
+    receivers = Array.isArray(receivers) ? receivers : [receivers];
+
+    if (subjects.length * senders.length * receivers.length === 0) { // any is 0
+      return () => {};
+    }
+
+    const listeners = {};
+
+    subjects.forEach(subject =>
+      this.onEvent.addListener(subject, listeners[subject] = (sender, data) => {
+        if (senders.includes(sender)) {
+          let [newSubject, newData] = [subject, data];
+
+          if (transform) {
+            const options = transform[subject] || transform.$default;
+            if (options) {
+              if (options.redirect) {
+                newSubject = typeof options.redirect === 'function'
+                  ? options.redirect(subject)
+                  : (options.redirect || newSubject);
+              }
+              newData = options.transform ? options.transform(data) : data;
+            }
+          }
+
+          this.emitEvent(receivers, newSubject, newData);
+        }
+      })
+    );
+
+    return () => Object.keys(listeners).forEach(subject =>
+      this.onEvent.removeListener(subject, listeners[subject])
+    );
+  }
+
+  /**
+   * @param {string} subject Subjects of the events to be forwarded.
+   * @param {string|string[]} senders Can be `@bot` or a page name.
+   * @param {string|string[]} receivers Can be `@bot` or a page name.
+   * @param {object?} transform Allows easily modifying the event payload or changing subject.
+   * @return {() => void} Call this to unforward.
+   */
+  forwardEvent(subject, senders, receivers, transform = null) {
+    return this.formwardEvents(
+      [subject],
+      senders,
+      receivers,
+      ...transform ? [
+        {
+          [subject]: transform
+        }
+      ] : []
+    );
+  }
+
+  /**
    * @param {string} receiver
    * @param {string} subject
    * @param {any?} data
